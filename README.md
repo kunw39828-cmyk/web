@@ -1,94 +1,106 @@
-# React + TypeScript + Vite
+# 校园综合服务平台（Web）
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+一个基于 Vue 3 + TypeScript + Vite 的校园服务前端项目，覆盖通知公告、失物招领、二手交易、场馆预约、统一登录和 AI 助手等核心模块。
 
-Currently, two official plugins are available:
+## 技术栈
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Vue 3
+- TypeScript
+- Vite
+- Vue Router
+- Pinia
+- ESLint
 
-## React Compiler
+## 本地运行
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+构建生产包：
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
 ```
 
-## 业务场景与角色权限（示例）
+## 演示账号
 
-本项目涉及两类角色：
+- 学生：`20260001 / 123456`
+- 学生：`20260002 / 654321`
+- 老师：`T2026001 / 888888`
+
+## 已实现模块
+
+- 统一认证登录
+  - 学号密码登录
+  - 微信扫码登录（会话生成、状态轮询、过期处理）
+  - 登录后个人中心、微信绑定
+- 通知公告
+  - 列表展示
+  - 独立发布页（仅老师可发布）
+  - 图片上传（最多 3 张，单张 <= 2MB）
+- 失物招领
+  - 列表展示
+  - 独立发布页（支持图片上传与预览）
+- 二手市集
+  - 商品列表与购买
+  - “我要出售”独立发布页
+  - 价格业务校验（价格 > 0.01）
+- 场馆预约
+  - 选择场馆、审批老师、日期与时间段
+  - 提交后进入“待老师审批”状态
+  - 展示我的预约申请记录
+- AI 服务助手
+  - 机器人面板式对话页面
+  - 基础问答引导（演示版）
+
+## 业务角色与权限
+
+项目当前定义两类角色：
+
 - 老师
 - 学生
 
-### 1) 发布校园通知
-- **业务场景**：用于发布课程安排、考试时间、活动通知等官方信息。
-- **权限规则**：仅老师可以发布、编辑、删除通知；学生可查看通知列表和详情。
-- **目的**：保证通知来源可信，避免无关或错误信息影响校园秩序。
+权限规则：
 
-### 2) 二手商品交易（出售 / 购买）
-- **业务场景**：老师和学生都可发布闲置物品，也可购买他人商品。
-- **权限规则**：老师、学生均可执行“发布商品、浏览商品、下单购买、取消自己发布的商品”。
-- **目的**：提升校园资源复用效率，支持师生共同参与交易。
+- 通知公告：仅老师可发布；老师和学生都可查看
+- 二手交易：老师和学生都可发布与购买
+- 失物招领：老师和学生都可发布与查看
+- 场馆预约：登录用户可提交申请，按场馆对应老师审批
 
-### 3) 可继续补充的业务场景（建议）
-- 失物招领：老师和学生都可发布，发布者可关闭状态。
-- 校园活动报名：老师可发起活动，学生可报名/取消报名。
-- 班级讨论区：老师和学生都可发帖，老师可置顶/删除违规内容。
+## 主要页面路由
+
+- `/` 首页
+- `/login` 登录页
+- `/profile` 个人中心（需登录）
+- `/news` 通知公告
+- `/news/publish` 发布通知（需登录，老师权限）
+- `/lost-found` 失物招领
+- `/lost-found/publish` 发布失物招领（需登录）
+- `/market` 二手市集
+- `/market/sell` 发布商品（需登录）
+- `/booking` 场馆预约（需登录）
+- `/ai-assistant` AI 服务助手
+
+## 项目目录结构（Vue 版）
+
+```text
+src/
+  api/           # 认证与微信扫码会话等接口模拟
+  assets/        # 静态资源
+  data/          # 演示数据（通知、场馆、审批老师等）
+  router/        # Vue Router 路由与鉴权守卫
+  stores/        # Pinia 状态管理
+  views/         # 页面视图（Home/Login/News/...）
+  App.vue        # 全局壳层（导航、页脚、RouterView）
+  main.ts        # Vue 应用入口
+  index.css      # 全局样式
+```
+
+## 后续可扩展方向
+
+- 对接真实后端 API 和数据库
+- 老师审批后台（通过/驳回）
+- 上传文件持久化（对象存储）
+- AI 助手对接真实大模型并支持流式回复
