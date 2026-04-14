@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNewsStore } from '../stores/news'
@@ -9,6 +9,12 @@ const news = useNewsStore()
 const route = useRoute()
 const notice = ref((route.query.created as string) ? '通知发布成功，已展示在公告列表。' : '')
 const canPublish = computed(() => auth.user?.role === 'teacher')
+
+onMounted(() => {
+  news.loadPosts().catch((error) => {
+    notice.value = error instanceof Error ? error.message : '加载通知失败。'
+  })
+})
 </script>
 
 <template>

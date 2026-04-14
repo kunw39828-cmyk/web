@@ -9,7 +9,6 @@ const news = useNewsStore()
 const router = useRouter()
 const title = ref('')
 const summary = ref('')
-const tag = ref('教务')
 const imageUrls = ref<string[]>([])
 const notice = ref('')
 const canSubmit = computed(() => auth.user?.role === 'teacher' && title.value.trim().length >= 4 && summary.value.trim().length >= 8)
@@ -23,10 +22,14 @@ function onImageChange(event: Event) {
   notice.value = ''
 }
 
-function submit() {
+async function submit() {
   if (!canSubmit.value || !auth.user) return (notice.value = '请完善表单后提交。')
-  news.createPost({ title: title.value, summary: summary.value, tag: tag.value, author: auth.user.name, imageUrls: imageUrls.value })
-  router.replace('/news?created=1')
+  try {
+    await news.createPost({ title: title.value, summary: summary.value, tag: '教务', author: auth.user.name, imageUrls: imageUrls.value })
+    router.replace('/news?created=1')
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : '发布失败。'
+  }
 }
 </script>
 
@@ -36,7 +39,7 @@ function submit() {
     <section class="profile-card">
       <form class="login__form" @submit.prevent="submit">
         <label class="field"><span>标题</span><input v-model="title" type="text" /></label>
-        <label class="field"><span>分类</span><select v-model="tag"><option>教务</option><option>学工</option><option>后勤</option><option>活动</option></select></label>
+        <label class="field"><span>分类</span><input value="教务" type="text" disabled /></label>
         <label class="field"><span>摘要</span><textarea v-model="summary" rows="3" /></label>
         <label class="field"><span>附件图片</span><input type="file" accept="image/*" multiple @change="onImageChange" /></label>
         <div v-if="imageUrls.length" class="upload-preview-grid"><div v-for="url in imageUrls" :key="url" class="upload-preview"><img :src="url" alt="预览" /></div></div>

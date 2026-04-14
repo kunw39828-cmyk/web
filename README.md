@@ -24,6 +24,42 @@ npm run dev
 npm run build
 ```
 
+后端 API（Express）：
+
+```bash
+npm run dev:server
+```
+
+默认地址：`http://localhost:3000/api`
+
+后端 API（Java + Spring Boot + MySQL）：
+
+```bash
+npm run dev:server:java
+```
+
+说明：
+
+- Java 后端目录：`server-java`
+- 默认端口：`3000`
+- 需先安装 JDK 17 和 Maven
+- MySQL 库名：`campus_service`（连接配置在 `server-java/src/main/resources/application.yml`）
+- 生产环境配置模板：`server-java/src/main/resources/application-prod.yml`
+- 建表脚本：`server-java/src/main/resources/schema.sql`
+- 前端环境变量模板：`.env.example`
+- Java 后端环境变量模板：`server-java/.env.example`
+
+生产配置运行示例：
+
+```bash
+mvn -f server-java/pom.xml spring-boot:run -Dspring-boot.run.profiles=prod
+```
+
+环境变量使用建议：
+
+1. 前端复制 `.env.example` 为 `.env` 后按需修改
+2. Java 后端按 `server-java/.env.example` 准备生产环境变量
+
 ## 演示账号
 
 - 学生：`20260001 / 123456`
@@ -51,6 +87,7 @@ npm run build
   - 选择场馆、审批老师、日期与时间段
   - 提交后进入“待老师审批”状态
   - 展示我的预约申请记录
+  - 老师审批台支持通过/驳回
 - AI 服务助手
   - 机器人面板式对话页面
   - 基础问答引导（演示版）
@@ -81,6 +118,7 @@ npm run build
 - `/market` 二手市集
 - `/market/sell` 发布商品（需登录）
 - `/booking` 场馆预约（需登录）
+- `/approval` 老师审批台（需登录，老师权限）
 - `/ai-assistant` AI 服务助手
 
 ## 项目目录结构（Vue 版）

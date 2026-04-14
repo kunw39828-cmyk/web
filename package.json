@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "node server/index.js",
+    "dev:server:java": "mvn -f server-java/pom.xml spring-boot:run",
     "build": "vue-tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

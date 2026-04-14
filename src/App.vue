@@ -1,11 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { useAuthStore } from './stores/auth'
+import { useMarketChatNotifyStore } from './stores/marketChatNotify'
 
 const auth = useAuthStore()
+const chatNotify = useMarketChatNotifyStore()
 const isAuthenticated = computed(() => auth.isAuthenticated)
 const user = computed(() => auth.user)
+
+watch(
+  () => auth.isAuthenticated,
+  (loggedIn) => {
+    if (loggedIn) chatNotify.startPolling()
+    else {
+      chatNotify.stopPolling()
+      void chatNotify.refresh()
+    }
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => chatNotify.stopPolling())
 </script>
 
 <template>
@@ -22,8 +38,14 @@ const user = computed(() => auth.user)
           <RouterLink to="/news" class="nav__link">通知公告</RouterLink>
           <RouterLink to="/lost-found" class="nav__link">失物招领</RouterLink>
           <RouterLink to="/market" class="nav__link">二手市集</RouterLink>
+          <RouterLink v-if="isAuthenticated" to="/messages" class="nav__link nav__link--messages">
+            消息
+            <span v-if="chatNotify.unreadTotal > 0" class="nav-badge" aria-label="未读消息">{{
+              chatNotify.unreadTotal > 99 ? '99+' : chatNotify.unreadTotal
+            }}</span>
+          </RouterLink>
           <RouterLink to="/booking" class="nav__link">场馆预约</RouterLink>
-          <RouterLink v-if="isAuthenticated" to="/profile" class="nav__link">个人中心</RouterLink>
+          <RouterLink v-if="isAuthenticated && auth.isTeacher" to="/approval" class="nav__link">老师审批</RouterLink>
         </nav>
         <div class="topbar__actions">
           <template v-if="isAuthenticated && user">
@@ -45,7 +67,7 @@ const user = computed(() => auth.user)
       <RouterView />
     </main>
     <footer class="footer">
-      <p>演示数据为静态占位，后续可对接学校统一身份认证与业务 API。</p>
+      <p>业务数据由后端 API 提供；本地开发请先启动 Java 服务（MySQL）再运行 <code>npm run dev</code>。</p>
     </footer>
   </div>
 </template>

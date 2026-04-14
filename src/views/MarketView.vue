@@ -1,22 +1,41 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useMarketStore } from '../stores/market'
 
 const auth = useAuthStore()
 const market = useMarketStore()
 const route = useRoute()
+const router = useRouter()
 const notice = ref((route.query.created as string) ? '商品创建成功，已发布到二手市集。' : '')
 
 function formatPrice(value: number) {
   return `¥${value.toFixed(0)}`
 }
 
-function buy(title: string) {
-  if (!auth.isAuthenticated || !auth.user) return (notice.value = '请先登录后再购买商品。')
-  notice.value = `下单成功：${auth.user.name} 已购买「${title}」。`
+function contact(item: { id: string | number; title: string; seller: string; sellerId?: string }) {
+  if (!auth.isAuthenticated || !auth.user) return (notice.value = '请先登录后再联系卖家。')
+  if (item.seller.includes(auth.user.name)) {
+    notice.value = '这是你自己发布的商品。'
+    return
+  }
+  router.push({
+    path: '/market/chat',
+    query: {
+      itemId: String(item.id),
+      title: item.title,
+      seller: item.seller,
+      sellerId: item.sellerId || '',
+    },
+  })
 }
+
+onMounted(() => {
+  market.loadItems().catch((error) => {
+    notice.value = error instanceof Error ? error.message : '加载商品失败。'
+  })
+})
 </script>
 
 <template>
@@ -31,7 +50,7 @@ function buy(title: string) {
       <article v-for="m in market.items" :key="m.id" class="market-card">
         <div class="market-card__top"><h2>{{ m.title }}</h2><p class="price">{{ formatPrice(m.price) }}</p></div>
         <p class="muted">{{ m.seller }} · {{ m.campus }}</p>
-        <button type="button" class="btn btn--ghost btn--block" @click="buy(m.title)">立即购买</button>
+        <button type="button" class="btn btn--ghost btn--block" @click="contact(m)">立即联系</button>
       </article>
     </div>
   </div>

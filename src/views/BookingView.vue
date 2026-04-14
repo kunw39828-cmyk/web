@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { teacherApprovers, venues } from '../data/content'
+import { computed, onMounted, ref, watch } from 'vue'
+import { apiRequest } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 
 type RequestStatus = '待老师审批' | '已通过' | '已驳回'
 type BookingRequest = {
-  id: string
+  id: string | number
   venueName: string
   applicant: string
   date: string
@@ -17,8 +17,15 @@ type BookingRequest = {
   status: RequestStatus
 }
 
+type Venue = { id: string; name: string; building: string; open: string; seats: number }
+type Teacher = { id: string; name: string; department: string; managedVenueIds: string[] }
+
 const auth = useAuthStore()
-const selectedVenueId = ref(venues[0]?.id ?? '')
+const venues = ref<Venue[]>([])
+const teachers = ref<Teacher[]>([])
+const teacherMode = ref<'byVenue' | 'all'>('byVenue')
+const loadingTeachers = ref(false)
+const selectedVenueId = ref('')
 const selectedTeacherId = ref('')
 const date = ref('')
 const startTime = ref('')
@@ -26,15 +33,53 @@ const endTime = ref('')
 const purpose = ref('')
 const notice = ref('')
 const requests = ref<BookingRequest[]>([])
-const selectedVenue = computed(() => venues.find((v) => v.id === selectedVenueId.value))
-const venueTeachers = computed(() => teacherApprovers.filter((t) => selectedVenue.value?.id && t.managedVenueIds.includes(selectedVenue.value.id)))
+const selectedVenue = computed(() => venues.value.find((v) => v.id === selectedVenueId.value))
+const venueTeachers = computed(() => teachers.value)
 const selectedTeacher = computed(() => venueTeachers.value.find((t) => t.id === selectedTeacherId.value))
 
-watch(venueTeachers, (teachers) => {
-  selectedTeacherId.value = teachers[0]?.id ?? ''
+watch(venueTeachers, (list) => {
+  selectedTeacherId.value = list[0]?.id ?? ''
 }, { immediate: true })
 
-function submit() {
+async function loadTeachers() {
+  loadingTeachers.value = true
+  try {
+    if (teacherMode.value === 'all') {
+      teachers.value = await apiRequest('/teachers')
+    } else if (selectedVenueId.value) {
+      teachers.value = await apiRequest(`/teachers?venueId=${selectedVenueId.value}`)
+    } else {
+      teachers.value = []
+    }
+  } finally {
+    loadingTeachers.value = false
+  }
+}
+
+watch(selectedVenueId, () => {
+  loadTeachers().catch((error) => {
+    notice.value = error instanceof Error ? error.message : '加载老师失败。'
+  })
+}, { immediate: true })
+
+watch(teacherMode, () => {
+  loadTeachers().catch((error) => {
+    notice.value = error instanceof Error ? error.message : '加载老师失败。'
+  })
+})
+
+onMounted(async () => {
+  venues.value = await apiRequest('/venues')
+  selectedVenueId.value = venues.value[0]?.id || ''
+  await loadTeachers()
+  if (auth.isAuthenticated) {
+    requests.value = await apiRequest('/bookings', {
+      headers: { Authorization: `Bearer ${auth.token}` },
+    })
+  }
+})
+
+async function submit() {
   if (!auth.user) return (notice.value = '请先登录后再提交预约申请。')
   if (!selectedVenue.value || !selectedTeacher.value) return (notice.value = '请选择场馆和审批老师。')
   if (!date.value) return (notice.value = '请选择使用日期。')
@@ -42,23 +87,28 @@ function submit() {
   if (!(startTime.value < endTime.value)) return (notice.value = '开始时间需早于结束时间。')
   if (purpose.value.trim().length < 2) return (notice.value = '请填写用途（至少 2 个字）。')
 
-  requests.value.unshift({
-    id: `${Date.now()}`,
-    venueName: selectedVenue.value.name,
-    applicant: `${auth.user.name}（${auth.user.studentId}）`,
-    date: date.value,
-    startTime: startTime.value,
-    endTime: endTime.value,
-    purpose: purpose.value.trim(),
-    managerTeacher: selectedTeacher.value.name,
-    managerDepartment: selectedTeacher.value.department,
-    status: '待老师审批',
-  })
-  notice.value = `申请已提交，已发送给 ${selectedTeacher.value.name}（${selectedTeacher.value.department}）审批。`
-  date.value = ''
-  startTime.value = ''
-  endTime.value = ''
-  purpose.value = ''
+  try {
+    const created = await apiRequest('/bookings', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${auth.token}` },
+      body: JSON.stringify({
+        venueId: selectedVenue.value.id,
+        teacherId: selectedTeacher.value.id,
+        date: date.value,
+        startTime: startTime.value,
+        endTime: endTime.value,
+        purpose: purpose.value.trim(),
+      }),
+    })
+    requests.value.unshift(created)
+    notice.value = `申请已提交，已发送给 ${selectedTeacher.value.name}（${selectedTeacher.value.department}）审批。`
+    date.value = ''
+    startTime.value = ''
+    endTime.value = ''
+    purpose.value = ''
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : '提交失败。'
+  }
 }
 </script>
 
@@ -68,7 +118,17 @@ function submit() {
     <section class="profile-card">
       <form class="login__form" @submit.prevent="submit">
         <label class="field"><span>选择场馆</span><select v-model="selectedVenueId"><option v-for="v in venues" :key="v.id" :value="v.id">{{ v.name }}（{{ v.building }}）</option></select></label>
+        <label class="field">
+          <span>老师来源</span>
+          <select v-model="teacherMode">
+            <option value="byVenue">按场馆筛选（推荐）</option>
+            <option value="all">全部老师（数据库实时）</option>
+          </select>
+        </label>
         <label class="field"><span>选择审批老师</span><select v-model="selectedTeacherId"><option v-for="t in venueTeachers" :key="t.id" :value="t.id">{{ t.name }}（{{ t.department }}）</option></select></label>
+        <div class="profile-actions">
+          <button type="button" class="btn btn--ghost" :disabled="loadingTeachers" @click="loadTeachers">刷新老师列表</button>
+        </div>
         <div class="booking-time-grid">
           <label class="field"><span>使用日期</span><input v-model="date" type="date" /></label>
           <label class="field"><span>开始时间</span><input v-model="startTime" type="time" /></label>

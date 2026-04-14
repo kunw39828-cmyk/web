@@ -13,16 +13,19 @@ const campus = ref('本部')
 const notice = ref('')
 const canSubmit = computed(() => title.value.trim().length >= 2 && Number(price.value) > 0.01)
 
-function submit() {
+async function submit() {
   if (!auth.user) return (notice.value = '请先登录后再发布商品。')
   if (!canSubmit.value) return (notice.value = '价格必须大于 0.01。')
-  market.createProduct({
-    title: title.value.trim(),
-    price: Number(price.value),
-    campus: campus.value,
-    seller: `${auth.user.name}（${auth.user.role === 'teacher' ? '老师' : '学生'}）`,
-  })
-  router.replace('/market?created=1')
+  try {
+    await market.createProduct({
+      title: title.value.trim(),
+      price: Number(price.value),
+      campus: campus.value,
+    })
+    router.replace('/market?created=1')
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : '创建商品失败。'
+  }
 }
 </script>
 

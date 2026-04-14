@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Secrets（API Key 等）
+.env
+.env.*
+!.env.example
+server-java/.env
+server-java/.env.*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
