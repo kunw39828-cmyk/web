@@ -42,27 +42,27 @@ public final class DemoBulkDataSeeder {
 
   private static void seedUsers(UserAccountRepo userRepo) {
     // 额外登录账号：1 个老师 + 9 个学生（仅在 DB 中不存在时插入）
-    saveUserIfAbsent(userRepo, "T2026010", "教务张老师", "teacher", "教务处", true, "teach2026");
-    saveUserIfAbsent(userRepo, "T2026011", "教务李老师", "teacher", "教务处", true, "teach6011");
-    saveUserIfAbsent(userRepo, "T2026012", "教务王老师", "teacher", "教务处", true, "teach6012");
-    saveUserIfAbsent(userRepo, "20260101", "学生01-赵一", "student", "计算机学院", true, "stu0101");
-    saveUserIfAbsent(userRepo, "20260102", "学生02-钱二", "student", "信息工程学院", false, "stu0102");
-    saveUserIfAbsent(userRepo, "20260103", "学生03-孙三", "student", "外国语学院", true, "stu0103");
-    saveUserIfAbsent(userRepo, "20260104", "学生04-李四", "student", "经济学院", false, "stu0104");
-    saveUserIfAbsent(userRepo, "20260105", "学生05-周五", "student", "法学院", true, "stu0105");
-    saveUserIfAbsent(userRepo, "20260106", "学生06-吴六", "student", "管理学院", false, "stu0106");
-    saveUserIfAbsent(userRepo, "20260107", "学生07-郑七", "student", "材料学院", true, "stu0107");
-    saveUserIfAbsent(userRepo, "20260108", "学生08-王八", "student", "艺术学院", true, "stu0108");
-    saveUserIfAbsent(userRepo, "20260109", "学生09-冯九", "student", "测试学院", false, "stu0109");
+    saveUserIfAbsent(userRepo, "T2026010", "教务张老师", "teacher", "教务处", "6010", "teach2026");
+    saveUserIfAbsent(userRepo, "T2026011", "教务李老师", "teacher", "教务处", "6011", "teach6011");
+    saveUserIfAbsent(userRepo, "T2026012", "教务王老师", "teacher", "教务处", "6012", "teach6012");
+    saveUserIfAbsent(userRepo, "20260101", "学生01-赵一", "student", "计算机学院", "0101", "stu0101");
+    saveUserIfAbsent(userRepo, "20260102", "学生02-钱二", "student", "信息工程学院", "0102", "stu0102");
+    saveUserIfAbsent(userRepo, "20260103", "学生03-孙三", "student", "外国语学院", "0103", "stu0103");
+    saveUserIfAbsent(userRepo, "20260104", "学生04-李四", "student", "经济学院", "0104", "stu0104");
+    saveUserIfAbsent(userRepo, "20260105", "学生05-周五", "student", "法学院", "0105", "stu0105");
+    saveUserIfAbsent(userRepo, "20260106", "学生06-吴六", "student", "管理学院", "0106", "stu0106");
+    saveUserIfAbsent(userRepo, "20260107", "学生07-郑七", "student", "材料学院", "0107", "stu0107");
+    saveUserIfAbsent(userRepo, "20260108", "学生08-王八", "student", "艺术学院", "0108", "stu0108");
+    saveUserIfAbsent(userRepo, "20260109", "学生09-冯九", "student", "测试学院", "0109", "stu0109");
 
-    saveUserIfAbsent(userRepo, "20260003", "王芳", "student", "外国语学院", true, "111111");
-    saveUserIfAbsent(userRepo, "20260004", "刘洋", "student", "经济学院", false, "222222");
-    saveUserIfAbsent(userRepo, "20260005", "周琪", "student", "计算机学院", true, "333333");
-    saveUserIfAbsent(userRepo, "T2026002", "刘老师", "teacher", "学生处", true, "777777");
-    saveUserIfAbsent(userRepo, "LF2026001", "失物测试号", "student", "测试学院", true, "lf123456");
+    saveUserIfAbsent(userRepo, "20260003", "王芳", "student", "外国语学院", "0003", "111111");
+    saveUserIfAbsent(userRepo, "20260004", "刘洋", "student", "经济学院", "0004", "222222");
+    saveUserIfAbsent(userRepo, "20260005", "周琪", "student", "计算机学院", "0005", "333333");
+    saveUserIfAbsent(userRepo, "T2026002", "刘老师", "teacher", "学生处", "6002", "777777");
+    saveUserIfAbsent(userRepo, "LF2026001", "失物测试号", "student", "测试学院", "0006", "lf123456");
   }
 
-  private static void saveUserIfAbsent(UserAccountRepo repo, String id, String name, String role, String dep, boolean bound, String pwd) {
+  private static void saveUserIfAbsent(UserAccountRepo repo, String id, String name, String role, String dep, String idLast4, String pwd) {
     if (repo.existsById(id)) {
       return;
     }
@@ -71,7 +71,8 @@ public final class DemoBulkDataSeeder {
     u.name = name;
     u.role = role;
     u.department = dep;
-    u.wechatBound = bound;
+    u.idCardLast4 = idLast4;
+    u.mustChangePassword = true;
     u.password = pwd;
     repo.save(u);
   }

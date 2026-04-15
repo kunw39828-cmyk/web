@@ -6,6 +6,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserAccountRepo extends JpaRepository<UserAccount, String> {
   Optional<UserAccount> findFirstByName(String name);
-
-  Optional<UserAccount> findByWechatOpenId(String wechatOpenId);
 }

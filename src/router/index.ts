@@ -14,16 +14,25 @@ import ProfileView from '../views/ProfileView.vue'
 import PublishLostFoundView from '../views/PublishLostFoundView.vue'
 import PublishNewsView from '../views/PublishNewsView.vue'
 import SellProductView from '../views/SellProductView.vue'
-import WxCallbackView from '../views/WxCallbackView.vue'
+import ChangePasswordView from '../views/ChangePasswordView.vue'
+import ForgotPasswordView from '../views/ForgotPasswordView.vue'
 import { useAuthStore } from '../stores/auth'
 
 export const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    if (to.path !== from.path) {
+      return { top: 0, behavior: 'smooth' }
+    }
+    return { top: 0 }
+  },
   routes: [
     { path: '/', component: HomeView },
-    { path: '/ai-assistant', component: AiAssistantView },
+    { path: '/ai-assistant', component: AiAssistantView, meta: { requiresAuth: true } },
     { path: '/login', component: LoginView },
-    { path: '/wx-callback', component: WxCallbackView },
+    { path: '/forgot-password', component: ForgotPasswordView },
+    { path: '/change-password', component: ChangePasswordView, meta: { requiresAuth: true } },
     { path: '/news', component: NewsView },
     { path: '/news/publish', component: PublishNewsView, meta: { requiresAuth: true } },
     { path: '/lost-found', component: LostFoundView },
@@ -44,6 +53,13 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { path: '/login', query: { from: to.fullPath } }
+  }
+  if (
+    auth.isAuthenticated &&
+    auth.user?.mustChangePassword &&
+    !['/change-password', '/login'].includes(to.path)
+  ) {
+    return { path: '/change-password', query: { from: to.fullPath } }
   }
   if (to.meta.teacherOnly && !auth.isTeacher) {
     return { path: '/' }

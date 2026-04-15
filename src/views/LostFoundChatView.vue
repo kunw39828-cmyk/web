@@ -358,7 +358,7 @@ onBeforeUnmount(() => {
           placeholder="搜索联系人/启事"
         />
         <button type="button" class="btn btn--ghost btn--block" @click="loadSessions">刷新会话</button>
-        <ul>
+        <ul class="scroll-silk">
           <li
             v-for="s in filteredSessions"
             :key="`${s.itemId}-${s.peerId}`"
@@ -385,7 +385,7 @@ onBeforeUnmount(() => {
           <p>你是发布人时：他人通过「联系对方」发给你的内容会出现在左侧列表，点进去即可回复。</p>
         </div>
         <template v-else>
-          <div ref="chatListEl" class="chat-list qq-chat-list">
+          <div ref="chatListEl" class="chat-list qq-chat-list scroll-silk">
             <article v-for="m in messages" :key="m.id" class="qq-message" :class="m.role === 'me' ? 'qq-message--me' : 'qq-message--peer'">
               <div class="qq-avatar">{{ m.role === 'me' ? '我' : 'TA' }}</div>
               <div class="qq-body">
@@ -426,6 +426,7 @@ onBeforeUnmount(() => {
             <textarea
               ref="inputEl"
               v-model="input"
+              class="scroll-silk scroll-silk--plain"
               rows="3"
               placeholder="输入消息，Enter 发送，Ctrl+Enter 换行"
               @compositionstart="composing = true"
@@ -478,7 +479,6 @@ onBeforeUnmount(() => {
   margin: 10px 0 0;
   padding: 0;
   max-height: 430px;
-  overflow: auto;
 }
 .qq-session-list li {
   cursor: pointer;
@@ -542,11 +542,15 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   background: #fff;
   padding: 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 72vh;
 }
 .qq-chat-list {
-  max-height: 390px;
-  overflow: auto;
-  padding-right: 4px;
+  flex: 1;
+  min-height: 58vh;
+  max-height: none;
+  padding-right: 2px;
 }
 .qq-message {
   display: flex;
@@ -624,14 +628,24 @@ onBeforeUnmount(() => {
   gap: 10px;
   align-items: flex-end;
 }
+
+.chat-form .btn {
+  padding: 6px 10px !important;
+  min-height: 34px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
 .chat-form textarea {
   width: 100%;
-  resize: vertical;
-  min-height: 66px;
+  resize: none;
+  min-height: 34px;
+  max-height: 72px;
   border-radius: 10px;
   border: 1px solid #cbd5e1;
-  padding: 10px;
+  padding: 6px 8px;
   font: inherit;
+  overflow: auto;
 }
 .image-preview-mask {
   position: fixed;

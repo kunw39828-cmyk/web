@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useMarketStore } from '../stores/market'
@@ -9,6 +9,23 @@ const market = useMarketStore()
 const route = useRoute()
 const router = useRouter()
 const notice = ref((route.query.created as string) ? '商品创建成功，已发布到二手市集。' : '')
+const keywordFilter = ref('')
+
+const displayItems = computed(() => {
+  const k = keywordFilter.value.trim().toLowerCase()
+  if (!k) return market.items
+  return market.items.filter(
+    (m) =>
+      m.title.toLowerCase().includes(k) ||
+      m.campus.toLowerCase().includes(k) ||
+      m.seller.toLowerCase().includes(k),
+  )
+})
+
+function syncKeywordFromRoute() {
+  const kw = route.query.keyword
+  keywordFilter.value = typeof kw === 'string' ? kw.trim() : ''
+}
 
 function formatPrice(value: number) {
   return `¥${value.toFixed(0)}`
@@ -32,10 +49,16 @@ function contact(item: { id: string | number; title: string; seller: string; sel
 }
 
 onMounted(() => {
+  syncKeywordFromRoute()
   market.loadItems().catch((error) => {
     notice.value = error instanceof Error ? error.message : '加载商品失败。'
   })
 })
+
+watch(
+  () => route.query.keyword,
+  () => syncKeywordFromRoute(),
+)
 </script>
 
 <template>
@@ -47,7 +70,7 @@ onMounted(() => {
       <p v-if="notice" class="login__notice">{{ notice }}</p>
     </section>
     <div class="market-grid">
-      <article v-for="m in market.items" :key="m.id" class="market-card">
+      <article v-for="m in displayItems" :key="m.id" class="market-card">
         <div class="market-card__top"><h2>{{ m.title }}</h2><p class="price">{{ formatPrice(m.price) }}</p></div>
         <p class="muted">{{ m.seller }} · {{ m.campus }}</p>
         <button type="button" class="btn btn--ghost btn--block" @click="contact(m)">立即联系</button>

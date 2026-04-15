@@ -35,9 +35,9 @@ public class DataInitializer {
     BookingRepo bookingRepo) {
     return args -> {
       if (userRepo.count() == 0) {
-        userRepo.save(user("20260001", "张晓雨", "student", "计算机学院", true, "123456"));
-        userRepo.save(user("20260002", "李明哲", "student", "信息工程学院", false, "654321"));
-        userRepo.save(user("T2026001", "陈老师", "teacher", "教务处", true, "888888"));
+        userRepo.save(user("20260001", "张晓雨", "student", "计算机学院", "0001", "123456"));
+        userRepo.save(user("20260002", "李明哲", "student", "信息工程学院", "0002", "654321"));
+        userRepo.save(user("T2026001", "陈老师", "teacher", "教务处", "6001", "888888"));
       }
       if (newsRepo.count() == 0) {
         NewsItem n = new NewsItem();
@@ -97,13 +97,14 @@ public class DataInitializer {
     };
   }
 
-  private UserAccount user(String id, String name, String role, String dep, boolean bound, String pwd) {
+  private UserAccount user(String id, String name, String role, String dep, String idLast4, String pwd) {
     UserAccount u = new UserAccount();
     u.studentId = id;
     u.name = name;
     u.role = role;
     u.department = dep;
-    u.wechatBound = bound;
+    u.idCardLast4 = idLast4;
+    u.mustChangePassword = true;
     u.password = pwd;
     return u;
   }

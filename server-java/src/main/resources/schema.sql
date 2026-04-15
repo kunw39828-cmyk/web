@@ -3,9 +3,9 @@ CREATE TABLE IF NOT EXISTS user_account (
   name VARCHAR(128) NOT NULL,
   role VARCHAR(32) NOT NULL,
   department VARCHAR(128) NOT NULL,
-  wechat_bound BOOLEAN NOT NULL DEFAULT FALSE,
-  password VARCHAR(128) NOT NULL,
-  wechat_open_id VARCHAR(128) UNIQUE
+  id_card_last4 VARCHAR(4) NOT NULL,
+  must_change_password BOOLEAN NOT NULL DEFAULT TRUE,
+  password VARCHAR(128) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS news_item (

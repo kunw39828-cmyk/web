@@ -8,15 +8,9 @@ type UserProfile = {
   name: string
   role: UserRole
   department: string
-  wechatBound: boolean
+  mustChangePassword?: boolean
 }
 type AuthSession = { token: string; user: UserProfile }
-
-export type WechatCapabilities = {
-  openQrEnabled: boolean
-  mockQrAvailable: boolean
-  vapidPublicKey: string
-}
 
 const STORAGE_KEY = 'campus-service-auth'
 
@@ -51,54 +45,21 @@ export const useAuthStore = defineStore('auth', () => {
     persist(next)
   }
 
-  async function createWechatSession(studentId: string) {
-    return apiRequest('/auth/wechat/session', {
+  async function changePassword(oldPassword: string, newPassword: string) {
+    if (!session.value?.token) throw new Error('请先登录。')
+    const r = await apiRequest<{ ok: boolean; user: UserProfile }>('/auth/change-password', {
       method: 'POST',
-      body: JSON.stringify({ studentId }),
+      headers: { Authorization: `Bearer ${session.value.token}` },
+      body: JSON.stringify({ oldPassword, newPassword }),
     })
+    persist({ token: session.value.token, user: r.user })
   }
 
-  async function getWechatStatus(sessionId: string) {
-    const data = await apiRequest(`/auth/wechat/session/${sessionId}/status`)
-    return data.status as 'pending' | 'confirmed' | 'expired'
-  }
-
-  async function confirmWechatSession(sessionId: string) {
-    const next = await apiRequest(`/auth/wechat/session/${sessionId}/confirm`, {
+  async function forgotPassword(studentId: string, name: string, idCardLast4: string) {
+    await apiRequest('/auth/forgot-password', {
       method: 'POST',
+      body: JSON.stringify({ studentId, name, idCardLast4 }),
     })
-    persist(next)
-  }
-
-  async function bindUserWechat() {
-    if (!user.value) throw new Error('请先登录后再绑定微信。')
-    const nextUser = await apiRequest('/auth/bind-wechat', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${session.value?.token || ''}` },
-      body: JSON.stringify({ studentId: user.value.studentId }),
-    })
-    persist({ token: session.value!.token, user: nextUser })
-  }
-
-  async function fetchWechatCapabilities(): Promise<WechatCapabilities> {
-    return apiRequest('/auth/wechat/capabilities')
-  }
-
-  async function initWechatOpen(body: { studentId?: string; password?: string }) {
-    return apiRequest<{ pollId: string; iframeUrl: string; expiresAt: number }>('/auth/wechat/open/init', {
-      method: 'POST',
-      body: JSON.stringify(body),
-    })
-  }
-
-  async function pollWechatOpen(pollId: string) {
-    return apiRequest<{ status: string; token?: string; user?: UserProfile; message?: string }>(
-      `/auth/wechat/open/poll?pollId=${encodeURIComponent(pollId)}`,
-    )
-  }
-
-  function completeWechatOpenLogin(next: AuthSession) {
-    persist(next)
   }
 
   function logout() {
@@ -112,14 +73,8 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     isTeacher,
     passwordLogin,
-    createWechatSession,
-    getWechatStatus,
-    confirmWechatSession,
-    bindUserWechat,
-    fetchWechatCapabilities,
-    initWechatOpen,
-    pollWechatOpen,
-    completeWechatOpenLogin,
+    changePassword,
+    forgotPassword,
     logout,
   }
 })

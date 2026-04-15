@@ -47,7 +47,6 @@ public class ApiController {
   private final BookingRepo bookingRepo;
   private final JwtService jwtService;
   private final WebPushService webPushService;
-  private final Map<String, WechatSession> wechatSessions = new ConcurrentHashMap<>();
 
   public ApiController(
  UserAccountRepo userRepo,
@@ -84,39 +83,45 @@ public class ApiController {
     return Map.of("token", jwtService.issue(user.studentId, user.role), "user", user);
   }
 
-  @PostMapping("/auth/wechat/session")
-  public Map<String, Object> createWechatSession(@RequestBody Map<String, String> body) {
-    var user = userRepo.findById(body.getOrDefault("studentId", "").trim()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "未找到该学号。"));
-    if (!user.wechatBound) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "当前账号未绑定微信。");
-    String sessionId = "wx-" + System.currentTimeMillis();
-    long expiresAt = System.currentTimeMillis() + 90_000;
-    wechatSessions.put(sessionId, new WechatSession(user.studentId, expiresAt, "pending"));
-    return Map.of("sessionId", sessionId, "expiresAt", expiresAt, "qrCodeText", "WECHAT_LOGIN:" + sessionId);
-  }
-
-  @GetMapping("/auth/wechat/session/{id}/status")
-  public Map<String, String> wechatStatus(@PathVariable String id) {
-    var record = wechatSessions.get(id);
-    if (record == null || System.currentTimeMillis() > record.expiresAt) return Map.of("status", "expired");
-    return Map.of("status", record.status);
-  }
-
-  @PostMapping("/auth/wechat/session/{id}/confirm")
-  public Map<String, Object> confirmWechat(@PathVariable String id) {
-    var record = wechatSessions.get(id);
-    if (record == null || System.currentTimeMillis() > record.expiresAt) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "二维码已过期。");
-    var user = userRepo.findById(record.studentId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "账号不存在。"));
-    record.status = "confirmed";
-    return Map.of("token", jwtService.issue(user.studentId, user.role), "user", user);
-  }
-
-  @PostMapping("/auth/bind-wechat")
-  public UserAccount bindWechat(@RequestHeader("Authorization") String auth, @RequestBody Map<String, String> body) {
+  @PostMapping("/auth/change-password")
+  public Map<String, Object> changePassword(@RequestHeader("Authorization") String auth, @RequestBody Map<String, String> body) {
     String studentId = jwtService.parseStudentId(auth);
-    if (!studentId.equals(body.get("studentId"))) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "无权限。");
     var user = userRepo.findById(studentId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "账号不存在。"));
-    user.wechatBound = true;
-    return userRepo.save(user);
+    String oldPwd = body.getOrDefault("oldPassword", "");
+    String newPwd = body.getOrDefault("newPassword", "");
+    if (oldPwd.isBlank() || newPwd.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请填写原密码与新密码。");
+    if (!user.password.equals(oldPwd)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "原密码错误。");
+    if (newPwd.length() < 6) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "新密码至少 6 位。");
+    if (newPwd.equals(oldPwd)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "新密码不能与原密码相同。");
+    user.password = newPwd;
+    user.mustChangePassword = false;
+    userRepo.save(user);
+    return Map.of("ok", true, "user", user);
+  }
+
+  @PostMapping("/auth/forgot-password")
+  public Map<String, Object> forgotPassword(@RequestBody Map<String, String> body) {
+    String sid = body.getOrDefault("studentId", "").trim();
+    String name = body.getOrDefault("name", "").trim();
+    String idLast4 = body.getOrDefault("idCardLast4", "").trim();
+    if (sid.isBlank() || name.isBlank() || idLast4.isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请填写学号、姓名与身份证后四位。");
+    }
+    if (!idLast4.matches("\\d{4}")) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "身份证后四位格式不正确。");
+    }
+    var user = userRepo.findById(sid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "未找到该学号。"));
+    if (user.name == null || !user.name.trim().equals(name)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "学号或姓名不匹配。");
+    }
+    if (user.idCardLast4 == null || !user.idCardLast4.trim().equals(idLast4)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "学号、姓名或身份证后四位不匹配。");
+    }
+    // 重置为学校配发初始密码（演示：固定为 123456），并强制下次登录修改
+    user.password = "123456";
+    user.mustChangePassword = true;
+    userRepo.save(user);
+    return Map.of("ok", true);
   }
 
   @GetMapping("/news")
@@ -604,15 +609,4 @@ public class ApiController {
     return resolvePeerId(peerId, peerName);
   }
 
-  private static class WechatSession {
-    String studentId;
-    long expiresAt;
-    String status;
-
-    WechatSession(String studentId, long expiresAt, String status) {
-      this.studentId = studentId;
-      this.expiresAt = expiresAt;
-      this.status = status;
-    }
-  }
 }

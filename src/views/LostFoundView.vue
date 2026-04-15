@@ -18,12 +18,28 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 const displayItems = computed(() => store.items)
 
 onMounted(() => {
+  const qk = route.query.keyword
+  if (typeof qk === 'string' && qk.trim()) {
+    searchInput.value = qk.trim()
+    keyword.value = qk.trim()
+  }
   runLoad().catch((error) => {
     notice.value = error instanceof Error ? error.message : '加载失物招领失败。'
   })
 })
 
 watch(tab, () => runLoad().catch(() => {}))
+
+watch(
+  () => route.query.keyword,
+  (kw) => {
+    if (typeof kw === 'string' && kw.trim()) {
+      searchInput.value = kw.trim()
+      keyword.value = kw.trim()
+      runLoad().catch(() => {})
+    }
+  },
+)
 watch(searchInput, () => {
   if (searchTimer) clearTimeout(searchTimer)
   searchTimer = setTimeout(() => {

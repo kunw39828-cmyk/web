@@ -1,6 +1,6 @@
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? '/api' : 'http://localhost:3000/api')
+  '/api'
 
 function errorMessage(data: unknown): string {
   if (!data || typeof data !== 'object') return '请求失败'

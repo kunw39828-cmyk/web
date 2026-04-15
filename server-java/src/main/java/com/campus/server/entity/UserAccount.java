@@ -14,11 +14,14 @@ public class UserAccount {
   public String name;
   public String role;
   public String department;
-  public boolean wechatBound;
 
-  /** 微信开放平台网站应用 OpenID，用于扫码登录 */
-  @Column(name = "wechat_open_id", unique = true, length = 128)
-  public String wechatOpenId;
+  /** 身份证后四位（仅用于忘记密码校验） */
+  @JsonIgnore
+  @Column(name = "id_card_last4", length = 4)
+  public String idCardLast4;
+
+  /** 首次登录后需修改学校配发密码 */
+  public boolean mustChangePassword = true;
 
   @JsonIgnore
   public String password;

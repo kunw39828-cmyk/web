@@ -7,18 +7,8 @@ import { subscribeWebPush } from '../utils/webPush'
 
 const auth = useAuthStore()
 const { token } = storeToRefs(auth)
-const notice = ref('')
 const pushNotice = ref('')
 const pushLoading = ref(false)
-
-async function bindWechat() {
-  try {
-    await auth.bindUserWechat()
-    notice.value = '微信绑定成功。'
-  } catch (e) {
-    notice.value = e instanceof Error ? e.message : '绑定失败'
-  }
-}
 
 async function enableBrowserPush() {
   const bearer = token.value?.trim()
@@ -49,22 +39,17 @@ async function enableBrowserPush() {
             <p>{{ auth.user.studentId }} · {{ auth.user.department }}</p>
             <div class="profile-badges">
               <span class="pill pill--ok">{{ auth.user.role === 'teacher' ? '教职工身份' : '学生身份' }}</span>
-              <span :class="auth.user.wechatBound ? 'pill pill--ok' : 'pill pill--warn'">{{
-                auth.user.wechatBound ? '微信已绑定' : '微信未绑定'
-              }}</span>
             </div>
           </div>
         </div>
       </section>
       <section class="profile-grid">
         <article class="profile-card">
-          <h2>微信绑定</h2>
-          <p class="muted">演示：一键标记已绑定。生产环境请在登录页使用「微信开放平台」扫码完成首次绑定（需配置 WECHAT_OPEN_*）。</p>
+          <h2>账号操作</h2>
+          <p class="muted">可在此退出当前账号。</p>
           <div class="profile-actions">
-            <button type="button" class="btn btn--primary" :disabled="auth.user.wechatBound" @click="bindWechat">立即绑定微信</button>
             <button type="button" class="btn btn--ghost" @click="auth.logout">退出当前账号</button>
           </div>
-          <p v-if="notice" class="login__notice">{{ notice }}</p>
         </article>
         <article class="profile-card">
           <h2>消息推送（浏览器）</h2>

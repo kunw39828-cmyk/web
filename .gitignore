@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+server-java/target/
+*.class
 
 # Secrets（API Key 等）
 .env
@@ -29,3 +31,7 @@ server-java/.env.*
 *.njsproj
 *.sln
 *.sw?
+
+# Local / temp scripts & dumps (do not publish)
+tmp_*.py
+campus_service_sync.sql
