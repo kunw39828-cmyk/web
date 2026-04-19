@@ -1,0 +1,37 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+server-java/target/
+*.class
+
+# Secrets（API Key 等）
+.env
+.env.*
+!.env.example
+server-java/.env
+server-java/.env.*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local / temp scripts & dumps (do not publish)
+tmp_*.py
+campus_service_sync.sql

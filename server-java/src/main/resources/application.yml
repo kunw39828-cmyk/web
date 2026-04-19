@@ -1,0 +1,42 @@
+server:
+  port: ${PORT:3000}
+  tomcat:
+    # 聊天 JSON 内嵌 data:image base64，需明显大于默认 ~2MB，否则易 HTTP 413
+    max-http-form-post-size: 25MB
+  servlet:
+    session:
+      timeout: 30m
+spring:
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/campus_service?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+app:
+  jwt-secret: ${JWT_SECRET:campus-demo-secret-campus-demo-secret}
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
+  public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:3000}
+  wechat-open:
+    enabled: ${WECHAT_OPEN_ENABLED:false}
+    app-id: ${WECHAT_OPEN_APP_ID:}
+    app-secret: ${WECHAT_OPEN_APP_SECRET:}
+  push:
+    vapid-public-key: ${VAPID_PUBLIC_KEY:}
+    vapid-private-key: ${VAPID_PRIVATE_KEY:}
+    vapid-subject: ${VAPID_SUBJECT:mailto:noreply@localhost}
+  ai:
+    # 可选：填写后走 OpenAI 兼容接口（/v1/chat/completions）；留空则使用内置校园 FAQ 机器人
+    openai-api-key: ${OPENAI_API_KEY:}
+    openai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    openai-model: ${OPENAI_MODEL:gpt-4o-mini}
