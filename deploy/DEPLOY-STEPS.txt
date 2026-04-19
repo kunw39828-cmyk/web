@@ -1,0 +1,29 @@
+========================================
+  web-mainpei deploy (3 steps)
+========================================
+
+[1] Pack on Windows (PowerShell, from project root):
+    .\deploy\pack.ps1
+
+    Creates: E:\Cpanxiazai\web-mainpei-deploy.tar.gz (see script output)
+
+[2] Upload (change IP):
+    scp "E:\Cpanxiazai\web-mainpei-deploy.tar.gz" root@38.76.201.16:/root/
+
+[3] On server (SSH login once):
+
+    mkdir -p /var/www/web-mainpei
+    tar -xzf /root/web-mainpei-deploy.tar.gz -C /var/www/web-mainpei
+    chmod +x /var/www/web-mainpei/deploy/install-ubuntu.sh
+    sudo APP_DIR=/var/www/web-mainpei /var/www/web-mainpei/deploy/install-ubuntu.sh
+
+    Open: http://YOUR_SERVER_IP/
+
+Notes:
+- Installs Node 20 if missing, npm ci, npm run build, PM2 (API :3001), Nginx proxy /api
+- Set JWT in production:
+    export JWT_SECRET='long-random-string'
+    pm2 restart web-mainpei-api --update-env && pm2 save
+- Open port 80 in cloud firewall
+
+========================================
