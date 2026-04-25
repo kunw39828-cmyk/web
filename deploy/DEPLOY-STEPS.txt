@@ -8,7 +8,7 @@
     Creates: E:\Cpanxiazai\web-mainpei-deploy.tar.gz (see script output)
 
 [2] Upload (change IP):
-    scp "E:\Cpanxiazai\web-mainpei-deploy.tar.gz" root@38.76.201.16:/root/
+    scp "E:\Cpanxiazai\web-mainpei-deploy.tar.gz" root@YOUR_SERVER_IP:/root/
 
 [3] On server (SSH login once):
 
@@ -20,7 +20,7 @@
     Open: http://YOUR_SERVER_IP/
 
 Notes:
-- Installs Node 20 if missing, npm ci, npm run build, PM2 (API :3001), Nginx proxy /api
+- Installs Node if missing, then npm ci, npm run build, PM2, and Nginx proxy /api
 - Set JWT in production:
     export JWT_SECRET='long-random-string'
     pm2 restart web-mainpei-api --update-env && pm2 save

@@ -47,8 +47,8 @@ export function initPetalTrail(opts: PetalTrailOptions = {}) {
     const rot2 = rot + rand(-140, 140)
     const dur = rand(650, 950)
 
-    // 三种浅色花瓣（贴合暖纸底 + 蓝/青绿）
-    const palette = ['rgba(255, 215, 196, 0.9)', 'rgba(210, 235, 255, 0.85)', 'rgba(210, 245, 232, 0.85)']
+    // 樱花色拖尾
+    const palette = ['rgba(255, 210, 226, 0.95)', 'rgba(255, 188, 214, 0.9)', 'rgba(255, 230, 239, 0.92)']
     const color = palette[(Math.random() * palette.length) | 0]
 
     el.style.left = `${x}px`

@@ -296,6 +296,10 @@ function isPinnedSession(s: ChatSession) {
   return pinnedKeys.value.includes(sessionKey(s.itemId, s.peerId))
 }
 
+function goBack() {
+  router.back()
+}
+
 const filteredSessions = computed(() => {
   const kw = sessionKeyword.value.trim().toLowerCase()
   if (!kw) return sessions.value
@@ -343,7 +347,10 @@ onBeforeUnmount(() => {
 <template>
   <div class="page">
     <header class="page-header">
-      <h1>{{ canChat ? '联系发布人 / 对方' : '失物联系' }}</h1>
+      <div class="lf-chat-header-row">
+        <h1>{{ canChat ? '联系发布人 / 对方' : '失物联系' }}</h1>
+        <button type="button" class="btn btn--ghost lf-chat-back-btn" @click="goBack">返回上一页</button>
+      </div>
       <p v-if="canChat">启事：{{ title }} ｜ 对方：{{ seller }}</p>
       <p v-else class="muted">
         在左侧选择会话即可查看。发布人不能在列表页「联系自己」，请从这里查看对方留言；顶部导航「消息」会显示未读条数。
@@ -448,3 +455,23 @@ onBeforeUnmount(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.lf-chat-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lf-chat-back-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .lf-chat-header-row {
+    align-items: flex-start;
+  }
+}
+</style>

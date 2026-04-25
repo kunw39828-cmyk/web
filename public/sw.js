@@ -1,4 +1,3 @@
-/* global self */
 self.addEventListener('push', (event) => {
   let payload = { title: '校园服务', body: '', data: {} }
   try {

@@ -1,6 +1,14 @@
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  '/api'
+/** 默认同源 `/api`（走 Vite 代理）。若配置绝对 URL 但漏写 `/api`，补全以免请求落到前端 HTML。 */
+function resolveApiBase(): string {
+  const raw = String(import.meta.env.VITE_API_BASE_URL || '').trim()
+  if (!raw) return '/api'
+  const noTrail = raw.replace(/\/$/, '')
+  if (noTrail.startsWith('/')) return noTrail
+  if (/^https?:\/\/[^/]+$/i.test(noTrail)) return `${noTrail}/api`
+  return noTrail
+}
+
+const API_BASE = resolveApiBase()
 
 function errorMessage(data: unknown): string {
   if (!data || typeof data !== 'object') return '请求失败'
@@ -23,16 +31,13 @@ function looksLikeHtml(text: string): boolean {
 
 function fallbackHttpError(status: number, statusText: string, rawBody: string): string {
   if (status === 413) {
-    return (
-      'HTTP 413：请求正文过大（聊天发图会把图片编成 base64 放进 JSON，体积远大于原图）。' +
-      '使用本地 Node 后端时请重启 `npm run dev:server`（已放宽 JSON 上限）；若经 Nginx 反代，请增大 `client_max_body_size`。'
-    )
+    return '请求内容过大，请压缩后重试。'
   }
   const hint =
     status === 404
-      ? '接口不存在。若使用 VITE_API_BASE_URL，请写成带 /api 的地址（如 http://localhost:3001/api），并确认已启动 dev:server。'
+      ? '接口地址不存在，请稍后重试。'
       : status === 0 || status >= 500
-        ? '服务器异常或未启动，请检查本地 API 是否在运行。'
+        ? '服务器暂时不可用，请稍后重试。'
         : ''
   const suffix = hint ? ` ${hint}` : ''
   if (rawBody && !looksLikeHtml(rawBody)) {
@@ -40,7 +45,7 @@ function fallbackHttpError(status: number, statusText: string, rawBody: string):
     if (snippet) return `HTTP ${status} ${statusText || ''}：${snippet}${suffix}`.trim()
   }
   if (looksLikeHtml(rawBody)) {
-    return `HTTP ${status}：返回了网页而非 JSON（通常是代理未命中或路径错误）。${suffix}`.trim()
+    return `HTTP ${status}：接口返回格式异常。${suffix}`.trim()
   }
   return `HTTP ${status} ${statusText || '请求失败'}${suffix}`.trim()
 }

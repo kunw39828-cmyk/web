@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -139,7 +140,10 @@ public class ApiController {
     item.author = user.name;
     item.date = LocalDate.now().toString();
     Object imgs = body.get("imageUrls");
-    if (imgs instanceof List<?> list) item.imageUrls = list.stream().map(String::valueOf).toList();
+    if (imgs instanceof List<?>) {
+      List<?> list = (List<?>) imgs;
+      item.imageUrls = list.stream().map(String::valueOf).collect(Collectors.toList());
+    }
     if (item.title.isBlank() || item.summary.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "标题和摘要必填。");
     return newsRepo.save(item);
   }
@@ -163,7 +167,7 @@ public class ApiController {
               || (i.publisherName != null && i.publisherName.contains(kw))
               || (i.publisherId != null && i.publisherId.contains(kw)));
     }
-    return stream.toList();
+    return stream.collect(Collectors.toList());
   }
 
   @PostMapping("/lost-found")
@@ -266,7 +270,7 @@ public class ApiController {
             m.messageType,
             "deleted",
             m.deletedFlag))
-      .toList();
+      .collect(Collectors.toList());
   }
 
   @PostMapping("/lost-found/{id}/chat")
@@ -437,7 +441,7 @@ public class ApiController {
       "read", m.readFlag,
       "type", m.messageType,
       "deleted", m.deletedFlag
-    )).toList();
+    )).collect(Collectors.toList());
   }
 
   @PostMapping("/market/{id}/chat")
@@ -553,7 +557,7 @@ public class ApiController {
   public List<Booking> pending(@RequestHeader("Authorization") String auth) {
     var user = mustUser(auth);
     if (!"teacher".equals(user.role)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "仅老师可查看审批列表。");
-    var teacherIds = teacherRepo.findByName(user.name).stream().map(t -> t.id).toList();
+    var teacherIds = teacherRepo.findByName(user.name).stream().map(t -> t.id).collect(Collectors.toList());
     return bookingRepo.findByTeacherIdInAndStatusOrderByIdDesc(teacherIds, "待老师审批");
   }
 
@@ -562,7 +566,7 @@ public class ApiController {
     var user = mustUser(auth);
     if (!"teacher".equals(user.role)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "仅老师可处理审批。");
     Booking booking = bookingRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "预约申请不存在。"));
-    var teacherIds = teacherRepo.findByName(user.name).stream().map(t -> t.id).toList();
+    var teacherIds = teacherRepo.findByName(user.name).stream().map(t -> t.id).collect(Collectors.toList());
     if (!teacherIds.contains(booking.teacherId)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "该申请不属于当前老师审批。");
     booking.status = "approve".equals(body.get("decision")) ? "已通过" : "已驳回";
     return bookingRepo.save(booking);

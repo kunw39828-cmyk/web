@@ -3,9 +3,10 @@ server:
 
 spring:
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/campus_service?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:123456}
+    url: ${DB_URL:jdbc:h2:file:/opt/project1/data/campus_service;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;AUTO_SERVER=TRUE}
+    driver-class-name: ${DB_DRIVER:org.h2.Driver}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
   jpa:
     hibernate:
       # 空库首次启动时用 update 自动建表；演示/内网可接受。正式生产建议改为 validate + 独立迁移工具。
@@ -21,8 +22,8 @@ spring:
 
 app:
   jwt-secret: ${JWT_SECRET:campus-demo-secret-campus-demo-secret}
-  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
-  public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:3000}
+  frontend-base-url: ${FRONTEND_BASE_URL:https://your-frontend.example.com}
+  public-base-url: ${APP_PUBLIC_BASE_URL:https://your-api.example.com}
   wechat-open:
     enabled: ${WECHAT_OPEN_ENABLED:false}
     app-id: ${WECHAT_OPEN_APP_ID:}
@@ -30,7 +31,7 @@ app:
   push:
     vapid-public-key: ${VAPID_PUBLIC_KEY:}
     vapid-private-key: ${VAPID_PRIVATE_KEY:}
-    vapid-subject: ${VAPID_SUBJECT:mailto:noreply@localhost}
+    vapid-subject: ${VAPID_SUBJECT:mailto:noreply@example.com}
   ai:
     openai-api-key: ${OPENAI_API_KEY:}
     openai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}

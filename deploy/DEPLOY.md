@@ -3,7 +3,7 @@
 ## 架构
 
 - 前端：`npm run build` 生成 `dist/`，由 **Nginx** 直接提供静态文件。
-- 接口：同域 **`/api`**，Nginx 反代到本机 **Node** `server/index.js`（默认端口 **3001**）。
+- 接口：同域 **`/api`**，由 Nginx 反代到后端服务。
 - 生产环境请设置 **`JWT_SECRET`**（勿使用仓库默认值）。
 
 ## 一次性准备（Ubuntu 示例）
@@ -64,4 +64,4 @@ sudo systemctl reload nginx
 
 ## 使用 Java 后端代替 Node
 
-若改为 Spring Boot 监听 **3000** 且仍由 Nginx 反代 `/api`，将 `web-mainpei.nginx.conf` 中 `proxy_pass` 改为 `http://127.0.0.1:3000`，并自行配置 MySQL、`application-prod.yml` 等；前端 **无需** 再单独 `npm run build` 以外的 `VITE_API_BASE_URL`（默认同域 `/api`）。
+若改为 Spring Boot，保持 Nginx 对 `/api` 的反代目标指向你的 Spring 服务地址，并自行配置数据库与 `application-prod.yml`；前端通常可继续使用同域 `/api`。

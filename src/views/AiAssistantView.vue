@@ -64,10 +64,7 @@ async function send(raw?: string) {
       messages.value[i] = {
         id: `a-${Date.now()}`,
         role: 'assistant',
-        content:
-          `抱歉，暂时无法连接 AI 服务（${reason}）。` +
-          '请确认已运行演示后端：`npm run dev:server`（默认端口 3001）。' +
-          '若使用 Java + MySQL 全栈，请执行 `npm run dev:server:java`（默认 3000），并在 `.env` 中设置 `VITE_API_BASE_URL=http://localhost:3000`。',
+        content: `抱歉，暂时无法连接 AI 服务（${reason}）。请稍后重试。`,
       }
     }
   } finally {

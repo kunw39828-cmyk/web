@@ -1,15 +1,23 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
+// 本地 API：Express 默认 3001（见 server/index.js）。`npm run dev` 与 `npm run preview` 均需代理 /api，否则会落到 SPA HTML → 聊天发消息报「返回了网页而非 JSON」。
+const apiProxy = {
+  '/api': { target: 'http://localhost:3001', changeOrigin: true },
+} as const
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
   server: {
     proxy: {
-      // 本地 Express 默认端口 3001（见 server/index.js）。须先起后端，否则终端会刷 ECONNREFUSED：
-      //   另开终端执行：npm run dev:server
-      // 再执行：npm run dev
-      '/api': { target: 'http://localhost:3001', changeOrigin: true },
+      // 须另开终端：npm run dev:server，再 npm run dev
+      ...apiProxy,
+    },
+  },
+  preview: {
+    proxy: {
+      ...apiProxy,
     },
   },
 })

@@ -24,25 +24,33 @@ npm run dev
 npm run build
 ```
 
-后端 API（Express，轻量演示，端口 **3001**）：
+`npm run dev` 会同时启动前端与接口服务，并把前端的 `/api` 请求代理到本地后端。
+
+若只需前端（例如 API 已由其他终端启动），可用：
+
+```bash
+npm run dev:web
+```
+
+单独启动后端服务（一般不必再开，除非你要与 `dev:web` 搭配）：
 
 ```bash
 npm run dev:server
 ```
 
-后端 API（Java + Spring Boot + MySQL，端口 **3000**，含 **AI 助手 `/api/ai`**）：
+后端 API（Java + Spring Boot + MySQL）：
 
 ```bash
 npm run dev:server:java
 ```
 
-本地前端 `npm run dev` 时，Vite 将 `/api` 代理到 **3001**（Express）。**AI 助手**（`/api/ai`）在 Node 演示服务中已提供与 Java 一致的「校园指引」回复；若需大模型或生产级数据，请使用 Java 后端并在 `.env` 中设置 `VITE_API_BASE_URL=http://localhost:3000`。
+使用 Java 后端时，请在前端环境变量中将接口地址指向后端 `/api` 路径。AI 助手在演示服务中已提供与 Java 一致的校园指引；若需大模型或生产级数据，请使用 Java 后端。
 
 说明：
 
 - Java 后端目录：`server-java`
-- 默认端口：`3000`
-- 需先安装 JDK 17 和 Maven
+- 端口：按你的部署环境配置
+- 需先安装 JDK 11（或更高 LTS）和 Maven
 - MySQL 库名：`campus_service`（连接配置在 `server-java/src/main/resources/application.yml`）
 - 生产环境配置模板：`server-java/src/main/resources/application-prod.yml`
 - 建表脚本：`server-java/src/main/resources/schema.sql`

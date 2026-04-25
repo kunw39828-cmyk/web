@@ -59,7 +59,7 @@ echo "==> 放行 HTTP（若已启用 ufw）"
 sudo ufw allow 80/tcp 2>/dev/null || true
 sudo ufw allow 'Nginx Full' 2>/dev/null || true
 
-echo "==> 完成。访问 http://本机公网IP/ ，接口同域 /api -> 127.0.0.1:3001"
+echo "==> 完成。访问 http://你的服务器地址/ ，接口使用同域 /api"
 echo "==> 生产环境请设置 JWT 后重启："
 echo "    export JWT_SECRET='随机长字符串'"
 echo "    pm2 restart web-mainpei-api --update-env && pm2 save"

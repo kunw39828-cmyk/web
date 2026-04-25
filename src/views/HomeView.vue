@@ -908,7 +908,7 @@ onBeforeUnmount(() => {
     radial-gradient(circle at 55% 92%, rgba(148, 163, 184, 0.12), transparent 44%);
   mix-blend-mode: screen;
   opacity: 0.78;
-  filter: blur(18px) saturate(108%);
+  filter: blur(10px) saturate(108%);
   animation: home-hero-glow 12s ease-in-out infinite;
   will-change: transform, opacity;
 }
@@ -1379,12 +1379,10 @@ onBeforeUnmount(() => {
   from {
     opacity: 0;
     transform: translateY(6px);
-    filter: blur(1px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
   }
 }
 
@@ -1635,8 +1633,7 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   border-radius: 14px;
   border: 1px solid rgba(210, 225, 242, 0.85);
-  background: linear-gradient(180deg, rgba(255, 254, 252, 0.99), rgba(248, 251, 255, 0.94));
-  backdrop-filter: blur(12px);
+  background: linear-gradient(180deg, rgba(255, 254, 252, 0.995), rgba(248, 251, 255, 0.97));
   box-shadow: 0 10px 32px rgba(45, 75, 110, 0.07);
 }
 
@@ -1717,6 +1714,8 @@ onBeforeUnmount(() => {
   overflow: visible;
   background: linear-gradient(155deg, rgba(255, 255, 255, 0.99), rgba(241, 245, 249, 0.96));
   border-color: var(--border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .home-lite--hero-follow :deep(.home-lite__panel)::before {
@@ -1745,6 +1744,8 @@ onBeforeUnmount(() => {
 .home-lite--hero-follow .home-lite__banner {
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.95), rgba(241, 245, 249, 0.92));
   border-color: var(--border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .home-lite--hero-follow .home-search__label {
@@ -1762,7 +1763,6 @@ onBeforeUnmount(() => {
   .home-scroll-scrub {
     opacity: 0;
     transform: translateY(18px);
-    will-change: opacity, transform;
     animation: home-scroll-scrub-in linear both;
     animation-timeline: scroll(root block);
   }
@@ -1798,12 +1798,10 @@ onBeforeUnmount(() => {
   from {
     opacity: 0;
     transform: translateY(18px);
-    filter: blur(1.5px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
   }
 }
 
@@ -1814,11 +1812,7 @@ onBeforeUnmount(() => {
     animation-range: 0vh 90vh;
   }
 
-  .home-hero__carousel {
-    animation: home-hero-carousel-bright linear forwards;
-    animation-timeline: scroll(root block);
-    animation-range: 0vh 90vh;
-  }
+  /* 不在滚动时间轴上动画整屏 filter（合成成本极高，易导致上滑掉帧） */
 
   .home-hero__veil {
     animation: home-hero-veil linear forwards;
@@ -1833,15 +1827,6 @@ onBeforeUnmount(() => {
   }
   to {
     transform: scale(1.04);
-  }
-}
-
-@keyframes home-hero-carousel-bright {
-  from {
-    filter: brightness(1) saturate(1.02);
-  }
-  to {
-    filter: brightness(0.93) saturate(1.05);
   }
 }
 
@@ -1961,7 +1946,6 @@ onBeforeUnmount(() => {
 
   @supports (animation-timeline: scroll()) {
     .home-hero__stage,
-    .home-hero__carousel,
     .home-hero__veil {
       animation: none;
     }
@@ -2009,19 +1993,15 @@ onBeforeUnmount(() => {
 .home-reveal {
   opacity: 0;
   transform: translate3d(0, 20px, 0) scale(0.992);
-  filter: saturate(0.92);
   transition:
     opacity 0.7s ease,
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-    filter 0.7s ease;
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: var(--reveal-delay, 0ms);
-  will-change: opacity, transform;
 }
 
 .home-reveal.is-visible {
   opacity: 1;
   transform: translate3d(0, 0, 0) scale(1);
-  filter: saturate(1);
 }
 
 .home-feed > * {

@@ -62,6 +62,7 @@ export async function loginWithPassword(
     throw new Error('学号或密码错误，请检查后重试。')
   }
 
-  const { password: _password, ...profile } = user
+  const profile = { ...user }
+  delete profile.password
   return makeSession(profile)
 }

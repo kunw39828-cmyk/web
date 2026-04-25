@@ -10,6 +10,9 @@ import MarketChatView from '../views/MarketChatView.vue'
 import MessagesHubView from '../views/MessagesHubView.vue'
 import LostFoundChatView from '../views/LostFoundChatView.vue'
 import NewsView from '../views/NewsView.vue'
+import ContactUsView from '../views/ContactUsView.vue'
+import PlatformGuideView from '../views/PlatformGuideView.vue'
+import FeedbackView from '../views/FeedbackView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import PublishLostFoundView from '../views/PublishLostFoundView.vue'
 import PublishNewsView from '../views/PublishNewsView.vue'
@@ -50,6 +53,9 @@ export const router = createRouter({
       },
     },
     { path: '/news', component: NewsView, meta: { breadcrumb: [homeCrumb, { label: '通知公告' }] } },
+    { path: '/contact', component: ContactUsView, meta: { breadcrumb: [homeCrumb, { label: '联系我们' }] } },
+    { path: '/guide', component: PlatformGuideView, meta: { breadcrumb: [homeCrumb, { label: '平台指南' }] } },
+    { path: '/feedback', component: FeedbackView, meta: { breadcrumb: [homeCrumb, { label: '意见反馈' }] } },
     {
       path: '/news/publish',
       component: PublishNewsView,

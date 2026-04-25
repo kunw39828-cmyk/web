@@ -31,7 +31,7 @@ public class RestExceptionHandler {
 
   @ExceptionHandler(ResponseStatusException.class)
   public ResponseEntity<Map<String, Object>> handle(ResponseStatusException ex) {
-    HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+    HttpStatus status = ex.getStatus();
     String reason = ex.getReason() != null ? ex.getReason() : status.getReasonPhrase();
     return ResponseEntity.status(status).body(Map.of("message", reason, "status", status.value()));
   }
@@ -45,8 +45,8 @@ public class RestExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String, Object>> handleUnexpected(Exception ex) {
-    if (ex instanceof ResponseStatusException rse) {
-      return handle(rse);
+    if (ex instanceof ResponseStatusException) {
+      return handle((ResponseStatusException) ex);
     }
     log.error("Unhandled exception", ex);
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

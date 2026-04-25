@@ -4,6 +4,9 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useMarketChatNotifyStore } from './stores/marketChatNotify'
 import AppBreadcrumbs from './components/AppBreadcrumbs.vue'
+import AppBrandMark from './components/AppBrandMark.vue'
+import { initPetalTrail } from './utils/petalTrail'
+import { disableSakuraEffect, enableSakuraEffect } from './utils/sakuraEffect'
 
 const auth = useAuthStore()
 const chatNotify = useMarketChatNotifyStore()
@@ -20,6 +23,9 @@ const headerSearchRef = ref<HTMLInputElement | null>(null)
 const userMenuOpen = ref(false)
 const userMenuRef = ref<HTMLElement | null>(null)
 const aiPaletteOpen = ref(false)
+const sakuraEnabled = ref(true)
+let stopPetalTrail: (() => void) | null = null
+const WHEEL_SPEED_MULTIPLIER = 3
 
 const showBreadcrumb = computed(() => !route.meta.hideBreadcrumb)
 
@@ -55,7 +61,6 @@ watch(
     if (loggedIn) chatNotify.startPolling()
     else {
       chatNotify.stopPolling()
-      void chatNotify.refresh()
     }
   },
   { immediate: true },
@@ -84,10 +89,63 @@ watch(menuOpen, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
 })
 
+watch(sakuraEnabled, (enabled) => {
+  if (enabled) {
+    enableSakuraEffect()
+    stopPetalTrail?.()
+    stopPetalTrail = initPetalTrail({ maxPerSecond: 30 })
+  } else {
+    disableSakuraEffect()
+    stopPetalTrail?.()
+    stopPetalTrail = null
+  }
+})
+
 function onDocClick(e: MouseEvent) {
   const el = userMenuRef.value
   if (!el) return
   if (!el.contains(e.target as Node)) closeUserMenu()
+}
+
+function canScroll(el: HTMLElement, deltaY: number) {
+  if (deltaY > 0) {
+    return el.scrollTop + el.clientHeight < el.scrollHeight - 1
+  }
+  return el.scrollTop > 0
+}
+
+function findScrollableContainer(node: EventTarget | null): HTMLElement | null {
+  let current = node instanceof HTMLElement ? node : null
+  while (current) {
+    const style = window.getComputedStyle(current)
+    const overflowY = style.overflowY
+    const allow = overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay'
+    if (allow && current.scrollHeight > current.clientHeight + 1) return current
+    current = current.parentElement
+  }
+  return null
+}
+
+function onGlobalWheel(e: WheelEvent) {
+  if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return
+  const target = e.target as HTMLElement | null
+  if (target) {
+    const tag = target.tagName
+    if (tag === 'SELECT') return
+  }
+
+  const step = e.deltaY * WHEEL_SPEED_MULTIPLIER
+  const container = findScrollableContainer(e.target)
+  if (container && canScroll(container, e.deltaY)) {
+    e.preventDefault()
+    container.scrollBy({ top: step })
+    return
+  }
+
+  const root = document.scrollingElement as HTMLElement | null
+  if (!root || !canScroll(root, e.deltaY)) return
+  e.preventDefault()
+  root.scrollBy({ top: step })
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -124,8 +182,15 @@ function recomputeHeroState() {
 }
 
 onMounted(() => {
+  try {
+    const saved = window.localStorage.getItem('ui.sakura.enabled')
+    sakuraEnabled.value = saved == null ? true : saved === '1'
+  } catch {
+    sakuraEnabled.value = true
+  }
   document.addEventListener('keydown', onKeydown)
   document.addEventListener('click', onDocClick)
+  window.addEventListener('wheel', onGlobalWheel, { passive: false, capture: true })
   recomputeHeroState()
   window.addEventListener('scroll', recomputeHeroState, { passive: true })
 })
@@ -133,7 +198,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
   document.removeEventListener('click', onDocClick)
+  window.removeEventListener('wheel', onGlobalWheel, { capture: true })
   window.removeEventListener('scroll', recomputeHeroState)
+  disableSakuraEffect()
+  stopPetalTrail?.()
+  stopPetalTrail = null
   chatNotify.stopPolling()
   document.body.style.overflow = ''
 })
@@ -165,7 +234,7 @@ onBeforeUnmount(() => {
             <span /><span /><span />
           </button>
           <RouterLink to="/" class="desktop-header__brand" @click="closeMenu">
-            <span class="desktop-header__mark" aria-hidden="true" />
+            <AppBrandMark />
             <span class="desktop-header__titles">
               <strong>校园综合服务平台</strong>
               <span>Campus Services</span>
@@ -261,7 +330,7 @@ onBeforeUnmount(() => {
 
       <div class="nav-drawer__body">
         <RouterLink to="/" class="nav-drawer__brand" @click="closeMenu">
-          <span class="nav-drawer__brand-mark" aria-hidden="true" />
+          <AppBrandMark />
           <span class="nav-drawer__brand-text">
             <strong>校园综合服务平台</strong>
             <span>Campus IM</span>
@@ -389,8 +458,11 @@ onBeforeUnmount(() => {
 }
 
 .desktop-header--hero {
-  background: linear-gradient(180deg, rgba(35, 48, 72, 0.35), rgba(35, 48, 72, 0.08));
+  /* 首页固定头栏：不用 backdrop-filter，避免与固定底图滚动合成叠加掉帧 */
+  background: linear-gradient(180deg, rgba(28, 38, 58, 0.78), rgba(28, 38, 58, 0.32));
   border-bottom-color: rgba(255, 255, 255, 0.15);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .desktop-header__inner {
@@ -470,13 +542,19 @@ onBeforeUnmount(() => {
   text-decoration: none;
 }
 
-.desktop-header__mark {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  flex-shrink: 0;
-  background: linear-gradient(145deg, #5b82f0, var(--brand), var(--brand-dark));
-  box-shadow: 0 6px 16px rgba(65, 105, 226, 0.25);
+.desktop-header__brand:hover :deep(.app-brand-mark) {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow:
+    0 8px 22px rgba(37, 99, 235, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.desktop-header--hero .desktop-header__brand :deep(.app-brand-mark) {
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .desktop-header__titles {
@@ -962,13 +1040,11 @@ onBeforeUnmount(() => {
   transform: translateY(0) scale(0.995);
 }
 
-.nav-drawer__brand-mark {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  flex-shrink: 0;
-  background: linear-gradient(145deg, #5b82f0, var(--brand), var(--brand-dark));
-  box-shadow: 0 6px 16px rgba(65, 105, 226, 0.25);
+.nav-drawer__brand:hover :deep(.app-brand-mark) {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow:
+    0 8px 22px rgba(37, 99, 235, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .nav-drawer__brand-text {
@@ -1088,4 +1164,5 @@ onBeforeUnmount(() => {
   color: #fff;
   box-shadow: 0 2px 8px rgba(200, 70, 100, 0.25);
 }
+
 </style>

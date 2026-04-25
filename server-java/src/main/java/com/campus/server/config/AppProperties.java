@@ -13,7 +13,7 @@ public class AppProperties {
   public static class Push {
     private String vapidPublicKey = "";
     private String vapidPrivateKey = "";
-    private String vapidSubject = "mailto:noreply@localhost";
+    private String vapidSubject = "mailto:noreply@example.com";
 
     public String getVapidPublicKey() {
       return vapidPublicKey;

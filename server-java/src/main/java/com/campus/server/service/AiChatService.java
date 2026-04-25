@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class AiChatService {
@@ -47,7 +49,7 @@ public class AiChatService {
   }
 
   private String callOpenAiCompatible(String userMessage) throws Exception {
-    RestClient client = RestClient.builder().baseUrl(openAiBaseUrl.trim()).build();
+    RestTemplate restTemplate = new RestTemplate();
     ObjectNode root = objectMapper.createObjectNode();
     root.put("model", openAiModel);
     root.put("temperature", 0.6);
@@ -59,15 +61,11 @@ public class AiChatService {
     user.put("role", "user");
     user.put("content", userMessage);
 
-    String raw =
-      client
-        .post()
-        .uri("/chat/completions")
-        .contentType(MediaType.APPLICATION_JSON)
-        .header("Authorization", "Bearer " + openAiApiKey.trim())
-        .body(objectMapper.writeValueAsString(root))
-        .retrieve()
-        .body(String.class);
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.setBearerAuth(openAiApiKey.trim());
+    HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(root), headers);
+    String raw = restTemplate.postForObject(openAiBaseUrl.trim() + "/chat/completions", request, String.class);
 
     if (raw == null || raw.isBlank()) {
       throw new RestClientException("empty response");

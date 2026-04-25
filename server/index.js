@@ -66,6 +66,17 @@ const lostFound = [
     publisherId: '20260001',
     publisherName: '张晓雨（学生）',
   },
+  {
+    id: 'l2',
+    title: '粉色杯子',
+    place: '图书馆三楼自习区',
+    date: '2026-04-12',
+    status: '寻找中',
+    kind: '寻物',
+    imageUrl: 'https://picsum.photos/seed/lfcup/480/480',
+    publisherId: '20260001',
+    publisherName: '张晓雨（学生）',
+  },
 ]
 const market = [
   {
@@ -80,11 +91,15 @@ const market = [
 /** 与 Java `MarketChatMessage` 对齐的内存表（仅 Node 演示服务使用） */
 let nextMarketChatMessageId = 1
 const marketChatMessages = []
+/** 与 Java `LostFoundChatMessage` 对齐的内存表（仅 Node 演示服务使用） */
+let nextLostFoundChatMessageId = 1
+const lostFoundChatMessages = []
 const bookings = []
 const wechatSessions = new Map()
 
 function sanitizeUser(user) {
-  const { password, ...profile } = user
+  const profile = { ...user }
+  delete profile.password
   return profile
 }
 
@@ -153,6 +168,30 @@ function findMarketProduct(id) {
   return market.find((m) => String(m.id) === String(id))
 }
 
+function findLostFoundPost(id) {
+  return lostFound.find((p) => String(p.id) === String(id))
+}
+
+function resolveLostFoundPeerId(item, meId, peerId, peerName) {
+  if (peerId != null && String(peerId).trim()) {
+    return resolvePeerId(peerId, peerName)
+  }
+  if (item.publisherId && String(item.publisherId).trim() && item.publisherId !== meId) {
+    return item.publisherId
+  }
+  return resolvePeerId(peerId, peerName)
+}
+
+function listLostFoundConversationRows(itemId, a, b) {
+  return lostFoundChatMessages
+    .filter(
+      (m) =>
+        String(m.itemId) === String(itemId) &&
+        ((m.fromId === a && m.toId === b) || (m.fromId === b && m.toId === a)),
+    )
+    .sort((x, y) => x.id - y.id)
+}
+
 function resolveMarketPeerId(item, meId, peerId, peerName) {
   if (peerId != null && String(peerId).trim()) {
     return resolvePeerId(peerId, peerName)
@@ -180,6 +219,43 @@ app.post('/api/auth/password-login', (req, res) => {
   const user = users[String(studentId || '').trim()]
   if (!user || user.password !== password) return res.status(400).json({ message: '学号或密码错误。' })
   res.json({ token: createToken(user), user: sanitizeUser(user) })
+})
+
+app.post('/api/auth/forgot-password', (req, res) => {
+  const { studentId, name, idCardLast4 } = req.body || {}
+  const sid = String(studentId || '').trim()
+  const uname = String(name || '').trim()
+  const id4 = String(idCardLast4 || '').trim()
+  if (!sid || !uname || !id4) {
+    return res.status(400).json({ message: '请完整填写学号、姓名和身份证后四位。' })
+  }
+  if (!/^\d{4}$/.test(id4)) {
+    return res.status(400).json({ message: '身份证后四位格式错误。' })
+  }
+  const user = users[sid]
+  if (!user || user.name !== uname) {
+    return res.status(400).json({ message: '学号与姓名不匹配。' })
+  }
+  return res.json({ ok: true, message: '身份已校验，请联系管理员重置密码。' })
+})
+
+app.post('/api/auth/change-password', authRequired, (req, res) => {
+  const user = userFromAuth(req)
+  if (!user) return res.status(401).json({ message: '登录状态失效。' })
+  const { oldPassword, newPassword } = req.body || {}
+  const oldPwd = String(oldPassword || '')
+  const newPwd = String(newPassword || '')
+  if (!oldPwd || !newPwd) {
+    return res.status(400).json({ message: '旧密码和新密码不能为空。' })
+  }
+  if (user.password !== oldPwd) {
+    return res.status(400).json({ message: '旧密码错误。' })
+  }
+  if (newPwd.length < 6) {
+    return res.status(400).json({ message: '新密码至少 6 位。' })
+  }
+  user.password = newPwd
+  return res.json({ ok: true, user: sanitizeUser(user) })
 })
 
 app.post('/api/auth/bind-wechat', authRequired, (req, res) => {
@@ -278,8 +354,152 @@ app.post('/api/lost-found', authRequired, (req, res) => {
   res.status(201).json(item)
 })
 
-/** 顶栏未读轮询会请求失物会话列表；Node 演示栈若无失物聊天则返回空数组，避免拖垮整次刷新 */
-app.get('/api/lost-found/chat/sessions', authRequired, (_req, res) => res.json([]))
+app.get('/api/lost-found/chat/sessions', authRequired, (req, res) => {
+  try {
+    const me = userFromAuth(req)
+    if (!me) return res.status(401).json({ message: '登录状态失效。' })
+    const all = lostFoundChatMessages
+      .filter((m) => m.fromId === me.studentId || m.toId === me.studentId)
+      .sort((a, b) => b.id - a.id)
+    const sessions = new Map()
+    for (const m of all) {
+      const peerId = m.fromId === me.studentId ? m.toId : m.fromId
+      const key = `${m.itemId}:${peerId}`
+      let s = sessions.get(key)
+      if (!s) {
+        const peerUser = findUserByStudentId(peerId)
+        const peerName = peerUser ? peerUser.name : peerId
+        const post = findLostFoundPost(m.itemId)
+        const itemTitle = post ? post.title : '启事已删除'
+        const unread = m.toId === me.studentId && !m.readFlag ? 1 : 0
+        s = {
+          itemId: m.itemId,
+          peerId,
+          peerName,
+          itemTitle,
+          lastContent: m.messageType === 'image' ? '[图片]' : m.content,
+          lastAt: m.createdAt,
+          unread,
+        }
+        sessions.set(key, s)
+      } else if (m.toId === me.studentId && !m.readFlag) {
+        s.unread += 1
+      }
+    }
+    res.json([...sessions.values()])
+  } catch (e) {
+    res.status(e.status || 500).json({ message: e.message || '加载会话失败。' })
+  }
+})
+
+app.get('/api/lost-found/:id/chat', authRequired, (req, res) => {
+  try {
+    const me = userFromAuth(req)
+    if (!me) return res.status(401).json({ message: '登录状态失效。' })
+    const item = findLostFoundPost(req.params.id)
+    if (!item) return res.status(404).json({ message: '启事不存在。' })
+    const peerId = req.query.peerId
+    const peerName = req.query.peerName
+    const otherId = resolveLostFoundPeerId(item, me.studentId, peerId, peerName)
+    if (otherId === me.studentId) {
+      return res.status(400).json({ message: '不能和自己聊天。' })
+    }
+    const list = listLostFoundConversationRows(item.id, me.studentId, otherId)
+    for (const m of list) {
+      if (m.toId === me.studentId && !m.readFlag) m.readFlag = true
+    }
+    res.json(
+      list.map((m) => ({
+        id: m.id,
+        itemId: m.itemId,
+        fromId: m.fromId,
+        toId: m.toId,
+        content: m.content,
+        createdAt: m.createdAt,
+        read: m.readFlag,
+        type: m.messageType,
+        deleted: m.deletedFlag,
+      })),
+    )
+  } catch (e) {
+    res.status(e.status || 500).json({ message: e.message || '加载消息失败。' })
+  }
+})
+
+app.post('/api/lost-found/:id/chat', authRequired, (req, res) => {
+  try {
+    const me = userFromAuth(req)
+    if (!me) return res.status(401).json({ message: '登录状态失效。' })
+    const item = findLostFoundPost(req.params.id)
+    if (!item) return res.status(404).json({ message: '启事不存在。' })
+    const body = req.body || {}
+    const otherId = resolveLostFoundPeerId(item, me.studentId, body.peerId, body.peerName)
+    if (otherId === me.studentId) {
+      return res.status(400).json({ message: '不能和自己聊天。' })
+    }
+    const type = String(body.type || 'text').trim()
+    if (type !== 'text' && type !== 'image') {
+      return res.status(400).json({ message: '消息类型不支持。' })
+    }
+    const text = String(body.content || '').trim()
+    if (!text) return res.status(400).json({ message: '消息不能为空。' })
+    if (type === 'image' && !text.startsWith('data:image/')) {
+      return res.status(400).json({ message: '图片消息格式非法。' })
+    }
+    const createdAt = new Date().toISOString()
+    const msg = {
+      id: nextLostFoundChatMessageId++,
+      itemId: item.id,
+      fromId: me.studentId,
+      toId: otherId,
+      content: text,
+      createdAt,
+      readFlag: false,
+      messageType: type,
+      deletedFlag: false,
+    }
+    lostFoundChatMessages.push(msg)
+    res.status(201).json({
+      id: msg.id,
+      itemId: msg.itemId,
+      fromId: msg.fromId,
+      toId: msg.toId,
+      content: msg.content,
+      createdAt: msg.createdAt,
+      read: msg.readFlag,
+      type: msg.messageType,
+      deleted: msg.deletedFlag,
+    })
+  } catch (e) {
+    res.status(e.status || 500).json({ message: e.message || '发送失败。' })
+  }
+})
+
+app.post('/api/lost-found/chat/:messageId/revoke', authRequired, (req, res) => {
+  try {
+    const me = userFromAuth(req)
+    if (!me) return res.status(401).json({ message: '登录状态失效。' })
+    const mid = Number(req.params.messageId)
+    const msg = lostFoundChatMessages.find((m) => m.id === mid)
+    if (!msg) return res.status(404).json({ message: '消息不存在。' })
+    if (msg.fromId !== me.studentId) {
+      return res.status(403).json({ message: '只能撤回自己发送的消息。' })
+    }
+    if (msg.deletedFlag) {
+      return res.json({ ok: true, already: true })
+    }
+    const sentAt = new Date(msg.createdAt).getTime()
+    if (Number.isNaN(sentAt) || Date.now() - sentAt > 2 * 60 * 1000) {
+      return res.status(400).json({ message: '仅支持发送后 2 分钟内撤回。' })
+    }
+    msg.deletedFlag = true
+    msg.content = '你撤回了一条消息'
+    msg.messageType = 'text'
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(e.status || 500).json({ message: e.message || '撤回失败。' })
+  }
+})
 
 app.get('/api/market', (_req, res) => res.json(market))
 app.post('/api/market', authRequired, (req, res) => {

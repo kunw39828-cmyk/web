@@ -24,7 +24,8 @@ async function submit() {
   try {
     submitting.value = true
     await auth.changePassword(oldPassword.value, newPassword.value)
-    notice.value = '密码修改成功。'
+    notice.value = '密码修改成功，正在返回上一页…'
+    await new Promise((resolve) => window.setTimeout(resolve, 900))
     await router.replace(from.value)
   } catch (e) {
     notice.value = e instanceof Error ? e.message : '修改失败'
